@@ -1,0 +1,19 @@
+"use client";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+const API=process.env.NEXT_PUBLIC_API_URL||"http://localhost:4000/api";
+function auth(){return {Authorization:`Bearer ${localStorage.getItem("admin_token")||""}`}}
+
+export default function ScrapeImportPage(){
+ const router=useRouter(); const [text,setText]=useState(""); const [busy,setBusy]=useState(false); const [message,setMessage]=useState(""); const [jobs,setJobs]=useState<any[]>([]);
+ const urls=useMemo(()=>[...new Set(text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean))], [text]);
+ async function load(){const r=await fetch(`${API}/admin/scrape-jobs`,{headers:auth()});if(r.status===401){router.push("/admin/login");return}if(r.ok)setJobs(await r.json())}
+ useEffect(()=>{if(!localStorage.getItem("admin_token")){router.push("/admin/login");return}load();const t=setInterval(load,3000);return()=>clearInterval(t)},[]);
+ async function start(){if(!urls.length){setMessage("কমপক্ষে ১টি Product URL দিন।");return}if(urls.length>1000){setMessage("একটি job-এ সর্বোচ্চ 1,000 URL দেওয়া যাবে।");return}setBusy(true);setMessage(`Queue হচ্ছে ${urls.length.toLocaleString()} URL...`);const r=await fetch(`${API}/admin/scrape-import`,{method:"POST",headers:{...auth(),"Content-Type":"application/json"},body:JSON.stringify({urls})});const d=await r.json();setMessage(r.ok?`✅ ${urls.length.toLocaleString()} URL queue হয়েছে। Job: ${d.id}`:(d.message||"Scrape import failed"));if(r.ok)setText("");setBusy(false);load()}
+ return <main className="admin"><div className="adminTop"><div><h1>Auto Scrape & Import</h1><p>Product URL paste করুন — data ও সর্বোচ্চ ৫টি image automatically import হবে।</p></div><div><a className="button secondary" href="/admin">← Admin</a></div></div>
+ <section className="adminCard"><h2>1,000 Product URLs</h2><p className="formHint">প্রতি লাইনে ১টি URL। একই URL একাধিকবার দিলে system duplicate বাদ দেবে।</p><textarea value={text} onChange={e=>setText(e.target.value)} placeholder={`https://example.com/product/pepsi\nhttps://example.com/product/red-bull\nhttps://example.com/product/schweppes`} style={{width:"100%",minHeight:280,fontFamily:"monospace",padding:16,borderRadius:10,border:"1px solid #ddd"}} />
+ <div className="actions" style={{marginTop:12}}><span>{urls.length.toLocaleString()} unique URL</span><button className="button" disabled={busy||!urls.length} onClick={start}>{busy?"Queueing...":"🚀 Start Auto Import"}</button><button className="button secondary" onClick={()=>setText("")}>Clear</button></div>{message&&<div className="notice">{message}</div>}</section>
+ <section className="adminCard"><h2>Scrape Jobs</h2><div className="tableWrap"><table><thead><tr><th>Job</th><th>Status</th><th>Progress</th><th>Imported</th><th>Failed</th><th>Created</th></tr></thead><tbody>{jobs.map(j=>{const pct=j.total?Math.round((j.processed/j.total)*100):0;return <tr key={j.id}><td>{j.id.slice(-10)}</td><td>{j.status}</td><td><div style={{minWidth:180}}><div>{j.processed.toLocaleString()} / {j.total.toLocaleString()} ({pct}%)</div><progress value={j.processed} max={j.total||1} style={{width:"100%"}} /></div></td><td>{j.imported.toLocaleString()}</td><td>{j.failed.toLocaleString()}</td><td>{new Date(j.createdAt).toLocaleString()}</td></tr>})}</tbody></table></div></section>
+ <section className="adminCard"><h2>What gets imported automatically?</h2><div className="stats"><div className="stat"><b>✓</b><span>Name</span></div><div className="stat"><b>✓</b><span>Price</span></div><div className="stat"><b>✓</b><span>Brand</span></div><div className="stat"><b>✓</b><span>Category</span></div><div className="stat"><b>✓</b><span>Description</span></div><div className="stat"><b>5</b><span>Images max</span></div></div><p className="formHint">Product data JSON-LD, OpenGraph/meta tags ও standard HTML signals থেকে নেওয়া হবে। source site-এর robots.txt/terms ও অনুমতি মেনে scraping ব্যবহার করুন।</p></section>
+ </main>
+}

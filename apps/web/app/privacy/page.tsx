@@ -1,0 +1,3 @@
+import type { Metadata } from "next";
+export const metadata: Metadata={title:"Privacy Policy"};
+export default function Page(){return <main className="container section"><article className="legalPage"><h1>Privacy Policy</h1><p>We respect your privacy. We collect only information needed to operate your account, process orders, deliver purchases, provide support and improve the store. We do not sell personal information. Payment providers and courier partners may receive information necessary to complete a transaction or delivery. You may contact us to request access or correction of account information.</p></article></main>}

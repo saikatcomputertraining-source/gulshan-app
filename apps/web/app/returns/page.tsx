@@ -1,0 +1,3 @@
+import type { Metadata } from "next";
+export const metadata: Metadata={title:"Returns & Refunds"};
+export default function Page(){return <main className="container section"><article className="legalPage"><h1>Returns & Refunds</h1><p>Return requests can be submitted from your account after a delivered order. Select the relevant order item, quantity and reason. Requests are reviewed by the store team and may move through Requested, Approved, Pickup Scheduled, Received, Refunded or Rejected states. Keep the product, packaging and supporting evidence until the request is resolved.</p></article></main>}
